@@ -1,0 +1,379 @@
+openapi: 3.0.0
+info:
+  version: "1.0.0"
+  title: Swagger Tickets
+  termsOfService: 'http://swagger.io/terms/'
+  contact:
+    email: apiteam@swagger.io
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/Nazar-TK/Tickets/1.0.0
+  - url: 'https://petstore.swagger.io/v2'
+
+tags:
+  - name: shows
+    description: Endpoint for shows
+  - name: tickets
+    description: Endpoint for tickets
+  - name: user
+    description: Endpoint for users
+paths:
+  /users/sign-up:
+    post:
+      tags: 
+        - user
+      summary: Register a user
+      operationId: registerUser
+      description: >
+        Register a user
+      responses:
+        '201':
+          description: user registered
+        '400':
+          description: invalid input, object invalid
+        '407':
+          description:  user already exists
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: 'username'
+                password:
+                  type: string
+                  example: 'password'
+        description: User registration
+  /login:
+    get:
+      tags:
+        - user
+      summary: Login with username and password
+      operationId: login
+      description: >
+        Login
+      parameters:
+        - name: username
+          in: query 
+          schema:
+            type: string
+          required: true
+          description: Write username
+        - name: password
+          in: query 
+          schema:
+            type: string
+          required: true
+          description: Write password
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: 'invalid input, object invalid'
+  /logout:
+    get:
+      tags:
+        - user
+      summary: Logs out current logged in user session
+      operationId: logoutUser
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Logout error
+          
+  /shows:
+    get:
+      tags: 
+        - shows
+      summary: Get all shows
+      operationId: getAllShows
+      description: >
+        No param required
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Show'
+        '400':
+          description: Bad request
+        '404':
+          description: No show found
+      security:
+        - ticket_auth:
+            - 'read: UnregisteredID'    
+  /shows/{showId}:
+    get:
+      tags:
+        - shows
+      summary: Get show by Id
+      parameters:
+        - in: path
+          name: showId
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: Numeric ID of the show to get
+      operationId: getShowById
+      description: >
+        Get a show by ID
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Show'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: No show found
+      security:
+        - ticket_auth:
+            - 'read: UnregisteredID'
+    
+  /tickets:
+    get:
+      tags:
+        - tickets
+      summary: Get all tickets
+      operationId: getAllTickets
+      description: |
+        No param required
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Bad request
+      security:
+        - ticket_auth:
+            - 'read: UnregisteredID'
+    post:
+      tags:
+        - tickets
+      summary: Buy a ticket
+      operationId: buyTicket
+      description: buy a ticket
+      responses:
+        '201':
+          description: ticket purchased
+        '400':
+          description: invalid input, object invalid
+        '409':
+          description: this item is already bought
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+        description: Ticket to buy
+      security:
+        - ticket_auth:
+            - 'buy: LoginID'
+            - 'read: UnregisteredID'
+  /tickets/{ticketId}:
+    get:
+      tags:
+        - tickets
+      summary: get ticket by id
+      parameters:
+        - in: path
+          name: ticketId
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: Numeric ID of the ticket to get  
+      operationId: getTicketById
+      description: |
+        Get ticket by id within the path
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: No ticket found  
+      security:
+        - ticket_auth:
+            - 'buy: LoginID'
+    put:
+      tags:
+        - tickets
+      summary: reserve ticket
+      parameters:
+        - in: path
+          name: ticketId
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: Numeric ID of the ticket to reserve
+      operationId: reserveTicketById
+      description: >
+        reserve ticket with chosen Id
+      responses:
+        '204':
+          description: resource reserved successfully
+        '404':
+          description: No ticket found  
+        '408':
+          description: this item is already reserved
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+      security:
+        - ticket_auth:
+            - 'buy: LoginID'
+            
+    delete:
+      tags:
+        - tickets
+      summary: delete ticket reservation
+      parameters:
+        - in: path
+          name: ticketId
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: Numeric ID of the ticket to delete
+      operationId: deleteTicketById
+      description: Deleted ticket reservation with chosen Id
+      responses:
+        '200':
+          description: ticket deleted successfully
+        '404':
+          description: No ticket found  
+      security:
+        - ticket_auth:
+            - 'buy: LoginID'
+
+  /users/{userId}/tickets:
+    get:
+      tags:
+        - user
+      summary: get all tickets by user ID
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: Numeric ID of the user  
+      operationId: getTicketsByUserId
+      description: |
+        Get all tickets by user Id
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: No ticket found  
+      security:
+        - ticket_auth:
+            - 'buy: LoginID'
+# Components          
+components:
+  responses:
+    NotFound:
+      description: The specified resource was not found
+  # Schemas
+  schemas:
+    Show:
+      type: object
+      required:
+        - name
+        - time
+        - place
+      properties:
+        name:
+          type: string
+          example: 'Varjaty show'
+        show type:
+          type: string
+          enum: ['with sitting places', 'without sitting places']
+         
+        description:
+          type: string
+          example: 'Humorous show'
+        time:
+          type: string
+          format: date-time
+          example: '18-02-2021'
+        place:
+          type: string
+          example: 'Chervona Kalyna Avenue, 81, Lviv'
+    Ticket:
+      type: object
+      required:
+        - show
+        - code
+      properties:
+        code:
+          type: string
+          example: 'HK29051'
+        is available: 
+          type: boolean
+          example: true
+        class:
+          type: string
+          enum: ['regular', 'vip']
+        show:
+          $ref: '#/components/schemas/Show'
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        name:
+          type: string
+          example: 'Petro'
+        phone:
+          type: string
+          example: 0675773535
+        mail:
+          type: string
+          format: email
+  securitySchemes:
+    ticket_auth:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: http
+          scopes:
+            'buy: LoginID': it will give you ability to view shows and buy and reserve tickets
+            'read: UnregisteredID': it will give you ability to view shows
