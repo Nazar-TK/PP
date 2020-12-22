@@ -1,33 +1,53 @@
-from sqlalchemy import Column,Integer,ForeignKey,String,DATE,create_engine
-from sqlalchemy import orm
+from sqlalchemy import Column, Integer, String, Boolean, orm, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
-engine = create_engine("postgresql://postgres:1234@localhost/db11", echo = True)
-Session = orm.sessionmaker(bind=engine)
 Base = declarative_base()
 
-class show(Base):
+
+class Show(Base):
     __tablename__ = "show"
+    show_id = Column(Integer, primary_key=True, unique=True)
     name = Column(String(25))
-    show_id = Column(Integer, primary_key=True)
     show_type = Column(String)
     description = Column(String)
-    time = Column(DATE)
+    time = Column(String)
     place = Column(String(1000))
 
-class users(Base):
+    def __init__(self, name, show_type, description,time, place):
+        self.name = name
+        self.show_type = show_type
+        self.description = description
+        self.time = time
+        self.place = place
+
+
+class User(Base):
     __tablename__ = "users"
     name = Column(String(20))
+    password = Column(String(100))
     phone = Column(String(20))
-    mail = Column(String(20))
-    id = Column(Integer, primary_key=True)
+    mail = Column(String(30), unique=True)
+    id = Column(Integer, primary_key=True, unique=True)
 
-class ticket(Base):
+    def __init__(self, name, password, phone, mail):
+        self.phone = phone
+        self.name = name
+        self.mail = mail
+        self.password = password
+
+
+class Ticket(Base):
     __tablename__ = "ticket"
-    code = Column(Integer, primary_key=True)
-    is_avaliable = Column(String(20))
+    code = Column(Integer, primary_key=True, unique=True)
+    is_avaliable = Column(Integer)
     clas = Column(String(20))
-    show_ = Column(Integer, ForeignKey(show.show_id))
-    show1 = orm.relationship(show)
-    user_id = Column(Integer, ForeignKey(users.id))
-    user = orm.relationship(users)
+    show_ = Column(Integer, ForeignKey(Show.show_id))
+    #show1 = orm.relationship(Show)
+    user_id = Column(Integer, ForeignKey(User.id))
+    #user = orm.relationship(User)
+
+    def __init__(self, is_avaliable, clas, show_, user_id):
+        self.is_avaliable = is_avaliable
+        self.clas = clas
+        self.show_ = show_
+        self.user_id = user_id
