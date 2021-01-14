@@ -1,33 +1,70 @@
-from sqlalchemy import Column,Integer,ForeignKey,String,DATE,create_engine
-from sqlalchemy import orm
-from sqlalchemy.ext.declarative import declarative_base
+from datetime import timedelta
 
-engine = create_engine("postgresql://postgres:1234@localhost/db11", echo = True)
-Session = orm.sessionmaker(bind=engine)
+from flask_jwt_extended import create_access_token
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from werkzeug.security import check_password_hash
+
 Base = declarative_base()
 
-class show(Base):
+
+class Show(Base):
     __tablename__ = "show"
-    name = Column(String(25))
-    show_id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, unique=True)
+    name = Column(String)
     show_type = Column(String)
     description = Column(String)
-    time = Column(DATE)
-    place = Column(String(1000))
+    time = Column(String)
+    place = Column(String)
 
-class users(Base):
-    __tablename__ = "users"
-    name = Column(String(20))
-    phone = Column(String(20))
-    mail = Column(String(20))
-    id = Column(Integer, primary_key=True)
+    def __init__(self, name, show_type, description, time, place):
+        self.name = name
+        self.show_type = show_type
+        self.description = description
+        self.time = time
+        self.place = place
 
-class ticket(Base):
+
+class User(Base):
+    __tablename__ = "user"
+    id = Column(Integer, primary_key=True, unique=True)
+    name = Column(String)
+    password = Column(String)
+    phone = Column(String)
+    mail = Column(String, unique=True)
+    admin = Column(Integer)
+
+    def __init__(self, name, password, phone, mail, admin):
+        self.phone = phone
+        self.name = name
+        self.mail = mail
+        self.password = password
+        self.admin = admin
+
+    def get_token(self, expire_time=24):
+        expire_delta = timedelta(expire_time)
+        token = create_access_token(identity=self.id, expires_delta=expire_delta)
+        return token
+
+    @classmethod
+    def authenticate(cls, mail, password):
+        from app import session
+        user = session.query(cls).filter(cls.mail == mail).one()
+        if not check_password_hash(user.password, password):
+            raise Exception('No user with this password')
+        return user
+
+
+class Ticket(Base):
     __tablename__ = "ticket"
-    code = Column(Integer, primary_key=True)
-    is_avaliable = Column(String(20))
-    clas = Column(String(20))
-    show_ = Column(Integer, ForeignKey(show.show_id))
-    show1 = orm.relationship(show)
-    user_id = Column(Integer, ForeignKey(users.id))
-    user = orm.relationship(users)
+    id = Column(Integer, primary_key=True, unique=True)
+    is_avaliable = Column(Integer)
+    clas = Column(String)
+    show_ = Column(Integer, ForeignKey(Show.id))
+    user_id = Column(Integer, ForeignKey(User.id))
+
+    def __init__(self, is_avaliable, clas, show_, user_id):
+        self.is_avaliable = is_avaliable
+        self.clas = clas
+        self.show_ = show_
+        self.user_id = user_id
